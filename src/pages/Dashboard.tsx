@@ -7,6 +7,7 @@ import { cn } from '../lib/utils'
 import { subDays } from 'date-fns'
 import StatusBadge from '../components/StatusBadge'
 import CategoryIcon from '../components/CategoryIcon'
+import { Reveal } from '../components/Reveal'
 
 interface Stats {
   inboxCount: number
@@ -97,30 +98,31 @@ export default function Dashboard() {
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {statCards.map((card) => {
+        {statCards.map((card, i) => {
           const Icon = card.icon
           return (
-            <button
-              key={card.label}
-              onClick={() => card.to && navigate(card.to)}
-              className={cn(
-                'bg-white rounded-2xl border border-nha-gray-200 p-5 text-left transition-all',
-                card.to ? 'hover:shadow-md hover:border-nha-sky cursor-pointer' : 'cursor-default',
-              )}
-            >
-              <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center mb-3', card.bg)}>
-                <Icon size={20} className={card.color} />
-              </div>
-              <p className="text-3xl font-bold text-nha-gray-900">{card.value}</p>
-              <p className="text-sm text-nha-gray-500 mt-0.5">{card.label}</p>
-            </button>
+            <Reveal key={card.label} delay={i * 130}>
+              <button
+                onClick={() => card.to && navigate(card.to)}
+                className={cn(
+                  'lift w-full bg-white rounded-2xl border border-nha-gray-200 p-5 text-left',
+                  card.to ? 'hover:border-nha-sky cursor-pointer' : 'cursor-default',
+                )}
+              >
+                <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center mb-3', card.bg)}>
+                  <Icon size={20} className={card.color} />
+                </div>
+                <p className="text-3xl font-bold text-nha-gray-900">{card.value}</p>
+                <p className="text-sm text-nha-gray-500 mt-0.5">{card.label}</p>
+              </button>
+            </Reveal>
           )
         })}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Category breakdown */}
-        <div className="bg-white rounded-2xl border border-nha-gray-200 p-6">
+        <Reveal delay={520} className="bg-white rounded-2xl border border-nha-gray-200 p-6">
           <h2 className="font-semibold text-nha-gray-800 mb-4">By Category</h2>
           {categories.length === 0 ? (
             <p className="text-sm text-nha-gray-400">No data yet</p>
@@ -145,10 +147,10 @@ export default function Dashboard() {
               ))}
             </div>
           )}
-        </div>
+        </Reveal>
 
         {/* Recent activity */}
-        <div className="bg-white rounded-2xl border border-nha-gray-200 p-6">
+        <Reveal delay={650} className="bg-white rounded-2xl border border-nha-gray-200 p-6">
           <h2 className="font-semibold text-nha-gray-800 mb-4">Recent Activity</h2>
           {recent.length === 0 ? (
             <p className="text-sm text-nha-gray-400">No activity yet</p>
@@ -171,7 +173,7 @@ export default function Dashboard() {
               ))}
             </div>
           )}
-        </div>
+        </Reveal>
       </div>
     </div>
   )

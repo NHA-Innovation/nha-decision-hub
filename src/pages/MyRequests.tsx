@@ -4,6 +4,7 @@ import { FileText, ExternalLink, ChevronDown, Clock, CheckCircle, XCircle, Arrow
 import { dhub } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { formatDate } from '../lib/utils'
+import { Reveal } from '../components/Reveal'
 
 interface Decision {
   action: string
@@ -250,7 +251,11 @@ export default function RequestsAndDecisions() {
                 Awaiting Review ({pending.length})
               </h2>
               <div className="space-y-2">
-                {pending.map(req => <RequestCard key={req.id} request={req} onClick={() => navigate(`/requests/${req.id}`)} />)}
+                {pending.map((req, i) => (
+                  <Reveal key={req.id} delay={Math.min(i, 8) * 130}>
+                    <RequestCard request={req} onClick={() => navigate(`/requests/${req.id}`)} />
+                  </Reveal>
+                ))}
               </div>
             </div>
           )}
@@ -262,7 +267,11 @@ export default function RequestsAndDecisions() {
                 </h2>
               )}
               <div className="space-y-2">
-                {decided.map(req => <RequestCard key={req.id} request={req} onClick={() => navigate(`/requests/${req.id}`)} />)}
+                {decided.map((req, i) => (
+                  <Reveal key={req.id} delay={Math.min(i, 8) * 130}>
+                    <RequestCard request={req} onClick={() => navigate(`/requests/${req.id}`)} />
+                  </Reveal>
+                ))}
               </div>
             </div>
           )}
@@ -270,7 +279,11 @@ export default function RequestsAndDecisions() {
       ) : (
         /* Flat list when filtered to a specific outcome */
         <div className="space-y-2">
-          {filtered.map(req => <RequestCard key={req.id} request={req} onClick={() => navigate(`/requests/${req.id}`)} />)}
+          {filtered.map((req, i) => (
+            <Reveal key={req.id} delay={Math.min(i, 8) * 130}>
+              <RequestCard request={req} onClick={() => navigate(`/requests/${req.id}`)} />
+            </Reveal>
+          ))}
         </div>
       )}
     </div>
@@ -284,7 +297,7 @@ function RequestCard({ request: req, onClick }: { request: Request; onClick: () 
 
   return (
     <div
-      className="bg-white rounded-xl border border-nha-gray-200 px-5 py-4 cursor-pointer hover:border-nha-gray-300 hover:shadow-sm transition-all"
+      className="lift bg-white rounded-xl border border-nha-gray-200 px-5 py-4 cursor-pointer hover:border-nha-gray-300"
       onClick={onClick}
     >
       {/* Row 1: Title + outcome badge */}

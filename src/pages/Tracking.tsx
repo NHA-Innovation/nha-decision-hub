@@ -4,6 +4,7 @@ import { dhub } from '../lib/supabase'
 import { cn } from '../lib/utils'
 import { differenceInDays, format, parseISO } from 'date-fns'
 import CategoryIcon from '../components/CategoryIcon'
+import { Reveal } from '../components/Reveal'
 
 // ClickUp status pipeline order — earlier = "less progress"
 const STATUS_ORDER = ['backlog', 'ready for dev', 'in progress', 'po review', 'complete', 'unknown']
@@ -387,11 +388,11 @@ export default function Tracking() {
       )}
 
       <div className="space-y-4">
-        {visibleGroups.map((g) => {
+        {visibleGroups.map((g, i) => {
           const isCollapsed = collapsed[g.key] ?? !g.is_current
           const allDone = g.total > 0 && g.done_count === g.total
           return (
-            <div key={g.key} className="bg-white rounded-2xl border border-nha-gray-200 overflow-hidden">
+            <Reveal key={g.key} delay={Math.min(i, 6) * 130} className="lift bg-white rounded-2xl border border-nha-gray-200 overflow-hidden">
               <button
                 onClick={() => toggleCollapsed(g.key)}
                 className="w-full flex items-center gap-3 px-5 py-4 hover:bg-nha-gray-50 transition-colors text-left"
@@ -473,7 +474,7 @@ export default function Tracking() {
                   ))}
                 </div>
               )}
-            </div>
+            </Reveal>
           )
         })}
       </div>
