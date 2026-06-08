@@ -1,10 +1,30 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Calendar, ChevronDown, ChevronRight, Clock, Target } from 'lucide-react'
+import { Calendar, ChevronDown, ChevronRight, Clock, ExternalLink, Target } from 'lucide-react'
 import { dhub } from '../lib/supabase'
 import { cn } from '../lib/utils'
 import StatusBadge from '../components/StatusBadge'
 import CategoryIcon from '../components/CategoryIcon'
+
+// Live ClickUp status presentation — mirrors the Tracking page so the two views
+// label/colour ClickUp states identically.
+const CU_STATUS_LABEL: Record<string, string> = {
+  backlog: 'Backlog',
+  'ready for dev': 'Ready for Dev',
+  'in progress': 'In Progress',
+  'po review': 'PO Review',
+  complete: 'Complete',
+  unknown: 'Unknown',
+}
+
+const CU_STATUS_COLOR: Record<string, string> = {
+  backlog: 'bg-nha-gray-100 text-nha-gray-700',
+  'ready for dev': 'bg-blue-100 text-blue-700',
+  'in progress': 'bg-amber-100 text-amber-800',
+  'po review': 'bg-purple-100 text-purple-700',
+  complete: 'bg-green-100 text-green-700',
+  unknown: 'bg-nha-gray-100 text-nha-gray-500',
+}
 
 interface Sprint {
   id: string
@@ -22,6 +42,9 @@ interface SprintTask {
   cenovio_estimate: number | null
   decided_at: string
   clickup_task_url: string | null
+  clickup_task_id: string | null
+  clickup_status: string | null
+  assignee: string | null
   status: string
 }
 
@@ -58,11 +81,28 @@ export default function Sprints() {
       // Fetch decisions with sprint assignments
       const { data: decisions } = await dhub
         .from('decisions')
-        .select('request_id, sprint_id, cenovio_estimate, priority, decided_at, clickup_task_url, requests(title, category, status)')
+        .select('request_id, sprint_id, cenovio_estimate, priority, decided_at, clickup_task_id, clickup_task_url, requests(title, category, status)')
         .eq('action', 'approve')
         .not('sprint_id', 'is', null)
 
       if (decisions) {
+        // Pull live ClickUp status + assignee for every linked task. The snapshot
+        // is kept fresh (~15 min) by the dhub-clickup-status-sync / comparison-sync
+        // crons, so this reflects current ClickUp state with no extra API calls.
+        const taskIds = (decisions as any[])
+          .map((d) => d.clickup_task_id)
+          .filter(Boolean) as string[]
+        const snapMap = new Map<string, { status: string; assignee: string | null }>()
+        if (taskIds.length > 0) {
+          const { data: snaps } = await dhub
+            .from('clickup_snapshot')
+            .select('task_id, status, assignee_name')
+            .in('task_id', taskIds)
+          for (const s of (snaps ?? []) as any[]) {
+            snapMap.set(s.task_id, { status: s.status, assignee: s.assignee_name })
+          }
+        }
+
         const grouped: Record<string, SprintTask[]> = {}
         for (const d of decisions as any[]) {
           const sprintId = d.sprint_id
@@ -72,6 +112,7 @@ export default function Sprints() {
           // Show tasks that are approved or sent to ClickUp (tracking)
           if (req.status !== 'approved' && req.status !== 'tracking') continue
           if (!grouped[sprintId]) grouped[sprintId] = []
+          const snap = d.clickup_task_id ? snapMap.get(d.clickup_task_id) : undefined
           grouped[sprintId].push({
             request_id: d.request_id,
             title: req.title,
@@ -80,6 +121,9 @@ export default function Sprints() {
             cenovio_estimate: d.cenovio_estimate,
             decided_at: d.decided_at,
             clickup_task_url: d.clickup_task_url,
+            clickup_task_id: d.clickup_task_id ?? null,
+            clickup_status: snap?.status ?? null,
+            assignee: snap?.assignee ?? null,
             status: req.status,
           })
         }
@@ -114,7 +158,7 @@ export default function Sprints() {
         <div>
           <h1 className="text-2xl font-bold text-nha-gray-900">Sprints</h1>
           <p className="text-sm text-nha-gray-500 mt-1">
-            Weekly development cycles (Wed–Wed) &middot; {CAPACITY_HOURS}h capacity
+            Weekly development cycles (Wed–Wed) &middot; {CAPACITY_HOURS}h capacity &middot; status synced from ClickUp
           </p>
         </div>
       </div>
@@ -217,8 +261,25 @@ export default function Sprints() {
                               <p className="font-medium text-nha-gray-800 truncate text-sm">
                                 {task.title}
                               </p>
-                              <div className="flex items-center gap-2 mt-0.5">
-                                <StatusBadge value={task.status} />
+                              <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                {task.clickup_status ? (
+                                  <span
+                                    className={cn(
+                                      'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium',
+                                      CU_STATUS_COLOR[task.clickup_status] ?? CU_STATUS_COLOR.unknown,
+                                    )}
+                                    title="Live status from ClickUp"
+                                  >
+                                    {CU_STATUS_LABEL[task.clickup_status] ?? task.clickup_status}
+                                  </span>
+                                ) : (
+                                  <StatusBadge value={task.status} />
+                                )}
+                                {task.assignee && (
+                                  <span className="text-xs text-nha-gray-500">
+                                    → {task.assignee}
+                                  </span>
+                                )}
                                 {task.priority && (
                                   <span className="text-xs text-nha-gray-400 capitalize">
                                     {task.priority}
@@ -235,6 +296,18 @@ export default function Sprints() {
                                 <span className="text-xs text-nha-gray-400">No est.</span>
                               )}
                             </div>
+                            {task.clickup_task_url && (
+                              <a
+                                href={task.clickup_task_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="text-nha-sky hover:text-nha-blue shrink-0"
+                                title="Open in ClickUp"
+                              >
+                                <ExternalLink size={15} />
+                              </a>
+                            )}
                           </div>
                         ))}
                         {/* Total row */}
