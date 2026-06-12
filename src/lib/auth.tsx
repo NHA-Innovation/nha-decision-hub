@@ -21,7 +21,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
-  const [isViewer, setIsViewer] = useState(() => sessionStorage.getItem('dhub_viewer') === '1')
+  // View-only mode removed 2026-06-11 (it depended on anon read policies that
+  // exposed dhub data to the public internet). Stale dhub_viewer flags are ignored.
+  const [isViewer, setIsViewer] = useState(false)
 
   async function checkAdmin(email: string | undefined) {
     if (!email) { setIsAdmin(false); return }
