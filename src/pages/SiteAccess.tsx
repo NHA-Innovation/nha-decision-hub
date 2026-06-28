@@ -81,6 +81,18 @@ const CSS = `
 .sa-sp[data-k=migrate]{border-left-color:#e0a800}
 .sa-sp .l{font-weight:600;color:var(--ink);margin-bottom:3px}
 .sa-sp .d{color:var(--ink-soft);font-size:.95rem;line-height:1.5}
+.sa-rr{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--line-strong);border-radius:9px;padding:.65rem 1.15rem;margin-bottom:.4rem}
+.sa-rr[data-k=owner]{border-left-color:var(--nha-blue)}
+.sa-rr[data-k=per_person]{border-left-color:var(--nha-cyan)}
+.sa-rr[data-k=shared]{border-left-color:#9ccc3a}
+.sa-rr[data-k=flag]{border-left-color:#e0a800}
+.sa-rrh{display:flex;justify-content:space-between;gap:.65rem;align-items:baseline;flex-wrap:wrap}
+.sa-rra{font-weight:600;color:var(--ink)}
+.sa-rrw{font-family:var(--mono);font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;padding:2px 8px;border-radius:999px;background:var(--fill-soft);color:var(--ink-soft);white-space:nowrap}
+.sa-rrw[data-k=owner]{background:var(--nha-blue-100);color:var(--nha-blue)}
+.sa-rrw[data-k=flag]{background:var(--nha-orange-soft);color:#A13E00}
+.sa-rrw[data-k=shared]{background:var(--nha-green-soft);color:#4D7600}
+.sa-rrd{color:var(--ink-soft);font-size:.95rem;margin-top:4px;line-height:1.5}
 .sa-foot{margin-top:2.75rem;padding-top:1.5rem;border-top:1px solid var(--line);color:var(--ink-faint);font-size:.82rem;display:flex;justify-content:space-between;flex-wrap:wrap;gap:.65rem}
 .sa-foot code{font-family:var(--mono);font-size:.72rem;background:var(--fill-soft);padding:2px 6px;border-radius:4px;color:var(--ink-soft)}
 .sa-empty{background:var(--surface);border:1px dashed var(--line-strong);border-radius:14px;padding:2rem;text-align:center;color:var(--ink-faint)}
@@ -221,6 +233,19 @@ export default function SiteAccess({ appKey }: { appKey: string }) {
                   <div className="sa-sp" data-k={s.kind} key={i}>
                     <div className="l">{s.label}</div>
                     <div className="d">{s.detail}</div>
+                  </div>
+                ))}
+              </>
+            )}
+
+            {d.special_rules && d.special_rules.length > 0 && (
+              <>
+                <h2 className="sa-sec" style={{ marginTop: "2rem" }}>Inside the site — what's restricted <span className="sa-scope">custom to this site</span></h2>
+                <p className="sa-secnote">Special rules that apply <em>after</em> sign-in — who can do what within the site. Inventoried centrally so it's known; enforced server-side by each site.</p>
+                {d.special_rules.map((r: any, i: number) => (
+                  <div className="sa-rr" data-k={r.kind} key={i}>
+                    <div className="sa-rrh"><span className="sa-rra">{r.area}</span><span className="sa-rrw" data-k={r.kind}>{r.who}</span></div>
+                    <div className="sa-rrd">{r.detail}</div>
                   </div>
                 ))}
               </>
