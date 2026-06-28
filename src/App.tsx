@@ -13,6 +13,7 @@ import Tracking from './pages/Tracking'
 import Guide from './pages/Guide'
 import HowItWorks from './pages/HowItWorks'
 import Admin from './pages/Admin'
+import SiteAccess from './pages/SiteAccess'
 
 function RootRedirect() {
   const { user, isAdmin, isViewer, loading } = useAuth()
@@ -37,6 +38,8 @@ export default function App() {
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<Login />} />
+          {/* Standardized Site Access page — standalone (own shell), any signed-in user. */}
+          <Route path="/security" element={<ProtectedRoute><SiteAccess appKey="decision_hub" /></ProtectedRoute>} />
           <Route path="/" element={<RootRedirect />} />
           <Route
             element={
