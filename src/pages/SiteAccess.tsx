@@ -41,6 +41,20 @@ const CSS = `
 .sa-btn-primary{background:var(--nha-blue);color:#fff}
 .sa-btn-ghost{background:var(--surface);color:var(--nha-blue);border:1px solid var(--line)}
 .sa-note{color:var(--ink-soft);font-size:.82rem;margin-left:auto;max-width:42ch}
+.sa-check{margin:0 0 1.5rem;padding:1.15rem;background:var(--surface);border:1px solid var(--line);border-radius:14px}
+.sa-check-h{font-family:var(--mono);font-size:.82rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:.6rem}
+.sa-check-sub{color:var(--ink-soft);font-size:.88rem;margin:-.3rem 0 .6rem}
+.sa-check-row{display:flex;gap:.65rem;flex-wrap:wrap}
+.sa-check-in{flex:1;min-width:240px;padding:9px 12px;border:1px solid var(--line-strong);border-radius:9px;font-size:.95rem;background:#fff}
+.sa-check-res{margin-top:.8rem;padding:.8rem 1rem;border-radius:9px;display:flex;flex-direction:column;gap:3px}
+.sa-check-res.ok{background:var(--nha-green-soft)}
+.sa-check-res.no{background:#fde8e8}
+.sa-check-res.na{background:var(--fill-soft)}
+.sa-check-badge{font-weight:700;color:var(--ink)}
+.sa-check-detail{color:var(--ink-soft);font-size:.9rem}
+.sa-check-amb{margin-top:.8rem;display:flex;flex-direction:column;gap:.4rem;color:var(--ink-soft);font-size:.9rem}
+.sa-amb-btn{text-align:left;padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer;font-size:.9rem;color:var(--nha-blue)}
+.sa-amb-btn:hover{background:var(--nha-blue-100)}
 .sa-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.9rem;margin-bottom:2rem}
 .sa-tile{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:1.15rem}
 .sa-tile .l{font-family:var(--mono);font-size:.82rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:.4rem}
@@ -154,6 +168,20 @@ export default function SiteAccess({ appKey }: { appKey: string }) {
     return () => { live = false; };
   }, [appKey]);
 
+  const [chkQ, setChkQ] = useState("");
+  const [chk, setChk] = useState<any>(null);
+  const [chkBusy, setChkBusy] = useState(false);
+  async function runCheck(q?: string) {
+    const query = (q ?? chkQ).trim();
+    if (!query) return;
+    setChkBusy(true); setChk(null);
+    try {
+      const r = await fetch(`${ENDPOINT}?app=${encodeURIComponent(appKey)}&check=${encodeURIComponent(query)}`);
+      setChk(await r.json());
+    } catch (e: any) { setChk({ error: String(e?.message || e) }); }
+    setChkBusy(false);
+  }
+
   return (
     <div className="sa-root">
       <style>{CSS}</style>
@@ -187,6 +215,29 @@ export default function SiteAccess({ appKey }: { appKey: string }) {
                   {d.admins ? `${d.admins.count} ${d.admins.note}.` : "Managed centrally from the Security console."}
                 </span>
               </div>
+            </section>
+
+            <section className="sa-check">
+              <div className="sa-check-h">Check access</div>
+              <p className="sa-check-sub">Enter a name or NHA email to see whether they can sign in to this site.</p>
+              <div className="sa-check-row">
+                <input className="sa-check-in" placeholder="Name or NHA email…" value={chkQ}
+                  onChange={(e) => setChkQ(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") runCheck(); }} />
+                <button className="sa-btn sa-btn-primary" onClick={() => runCheck()} disabled={chkBusy}>{chkBusy ? "Checking…" : "Check"}</button>
+              </div>
+              {chk && (chk.ambiguous ? (
+                <div className="sa-check-amb">Multiple matches — pick one:
+                  {chk.ambiguous.map((m: any, i: number) => (
+                    <button key={i} className="sa-amb-btn" onClick={() => { setChkQ(m.email); runCheck(m.email); }}>{m.name} · {m.email}</button>
+                  ))}
+                </div>
+              ) : (
+                <div className={`sa-check-res ${chk.allowed === true ? "ok" : chk.allowed === false ? "no" : "na"}`} data-testid="sa-check-result">
+                  <span className="sa-check-badge">{chk.allowed === true ? "✓ Has access" : chk.allowed === false ? "✕ No access" : "– Not applicable"}</span>
+                  <span className="sa-check-detail">{chk.name ? `${chk.name} — ` : ""}{chk.reason || chk.error}</span>
+                </div>
+              ))}
             </section>
 
             <div className="sa-stats">
